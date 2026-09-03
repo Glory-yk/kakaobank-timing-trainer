@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>카카오뱅크 오픈런 타이밍 트레이너</title>
+  <style>
+    :root {
+      --bg: #121214;
+      --card-bg: #1c1c22;
+      --card-border: #2d2d38;
+      --kakao-yellow: #fee500;
+      --kakao-yellow-hover: #e5cf00;
+      --text-main: #f5f5f7;
+      --text-muted: #8e8e93;
+      --golden: #ffb300;
+      --danger: #ff4757;
+      --safe: #00d2d3;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 14px 40px;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* 상단 헤더 */
+    header {
+      text-align: center;
+      padding-top: 2px;
+    }
+
+    .badge-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .brand-tag {
+      background: rgba(254, 229, 0, 0.16);
+      color: var(--kakao-yellow);
+      font-size: 0.74rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(254, 229, 0, 0.35);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .brand-tag span.k-icon {
+      background: var(--kakao-yellow);
+      color: #191919;
+      font-weight: 900;
+      border-radius: 3px;
+      padding: 0 3px;
+      font-size: 0.68rem;
+    }
+
+    .sync-status {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #18181c;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid #2a2a34;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #34c759;
+      box-shadow: 0 0 6px #34c759;
+    }
+
+    .resync-btn {
+      background: transparent;
+      border: 1px solid #3c3c48;
+      color: #b0b0b8;
+      font-size: 0.66rem;
+      padding: 2px 6px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    h1 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    /* 실전 타깃 팁 배너 */
+    .target-banner {
+      background: linear-gradient(135deg, rgba(255, 179, 0, 0.18), rgba(254, 229, 0, 0.10));
+      border: 1px solid rgba(254, 229, 0, 0.45);
+      border-radius: 12px;
+      padding: 9px 12px;
+      font-size: 0.82rem;
+      color: #eaeaea;
+      line-height: 1.45;
+    }
+
+    .target-banner .highlight {
+      color: var(--kakao-yellow);
+      font-weight: 800;
+      font-size: 0.92rem;
+    }
+
+    .target-banner .sub {
+      color: #b0b0b8;
+      font-size: 0.74rem;
+      margin-top: 2px;
+    }
+
+    /* 모드 선택 세그먼트 */
+    .mode-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      background: #18181c;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 3px;
+      gap: 4px;
+    }
+
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 7px 4px;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .mode-btn.active {
+      background: var(--card-bg);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      border: 1px solid #3d3d4b;
+    }
+
+    /* 🚦 F1 스타일 3-2-1 비주얼 신호등 박스 */
+    .traffic-light-box {
+      background: #16161c;
+      border: 1px solid #282834;
+      border-radius: 14px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .light-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 2px;
+      border-radius: 8px;
+      background: #1f1f28;
+      opacity: 0.35;
+      transition: all 0.08s ease;
+    }
+
+    .light-bulb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #555;
+    }
+
+    .light-item.active-3 {
+      opacity: 1;
+      background: rgba(255, 71, 87, 0.2);
+      border: 1px solid #ff4757;
+    }
+    .light-item.active-3 .light-bulb {
+      background: #ff4757;
+      box-shadow: 0 0 12px #ff4757;
+    }
+
+    .light-item.active-2 {
+      opacity: 1;
+      background: rgba(255, 165, 2, 0.2);
+      border: 1px solid #ffa502;
+    }
+    .light-item.active-2 .light-bulb {
+      background: #ffa502;
+      box-shadow: 0 0 12px #ffa502;
+    }
+
+    .light-item.active-1 {
+      opacity: 1;
+      background: rgba(254, 229, 0, 0.25);
+      border: 1px solid var(--kakao-yellow);
+    }
+    .light-item.active-1 .light-bulb {
+      background: var(--kakao-yellow);
+      box-shadow: 0 0 14px var(--kakao-yellow);
+    }
+
+    .light-item.active-go {
+      opacity: 1;
+      background: linear-gradient(135deg, #ffb300, #fee500);
+      border: 1px solid #fff;
+      transform: scale(1.05);
+      box-shadow: 0 0 18px rgba(254, 229, 0, 0.8);
+    }
+    .light-item.active-go .light-bulb {
+      background: #fff;
+      box-shadow: 0 0 15px #fff;
+    }
+    .light-item.active-go .light-text {
+      color: #000 !important;
+      font-weight: 900 !important;
+    }
+
+    .light-text {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #888;
+    }
+
+    /* ⏱️ 정밀 타이밍 물리 진자(Pendulum) 카드 */
+    .pendulum-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 14px 14px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.1s ease;
+    }
+
+    .pendulum-card.in-golden {
+      border-color: var(--kakao-yellow);
+      background: #24231b;
+      box-shadow: 0 0 35px rgba(254, 229, 0, 0.5), inset 0 0 15px rgba(254, 229, 0, 0.15);
+    }
+
+    .pendulum-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .pendulum-header b {
+      color: var(--kakao-yellow);
+    }
+
+    .pendulum-canvas-wrap {
+      width: 100%;
+      height: 140px;
+      position: relative;
+      background: radial-gradient(circle at 50% 10%, #20202a 0%, #121216 85%);
+      border-radius: 12px;
+      border: 1px solid #282834;
+      overflow: hidden;
+    }
+
+    #pendulum-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .pendulum-guide {
+      margin-top: 6px;
+      font-size: 0.74rem;
+      color: #b0b0b8;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .pendulum-guide b {
+      color: var(--kakao-yellow);
+    }
+
+    /* 메인 시계 카드 */
+    .clock-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 18px 14px 16px;
+      text-align: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.1s ease, box-shadow 0.1s ease, background-color 0.1s ease;
+    }
+
+    /* 골든존 플래시 (0.4초간 눈에 띄게 반짝임) */
+    .clock-card.golden-flash {
+      border-color: var(--kakao-yellow);
+      background: #25241b;
+      box-shadow: 0 0 40px rgba(254, 229, 0, 0.65), inset 0 0 20px rgba(254, 229, 0, 0.25);
+    }
+
+    .clock-title {
+      font-size: 0.8rem;
+      color: var(--kakao-yellow);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .digital-clock {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      font-variant-numeric: tabular-nums;
+      color: #ffffff;
+      text-shadow: 0 0 16px rgba(255, 255, 255, 0.1);
+      transition: transform 0.08s ease;
+    }
+
+    .digital-clock .ms {
+      font-size: 1.7rem;
+      color: var(--kakao-yellow);
+      font-weight: 700;
+    }
+
+    @keyframes goldenFlashPulse {
+      0% {
+        transform: scale(1.0);
+        color: #ffffff;
+        text-shadow: 0 0 15px rgba(254, 229, 0, 0.7);
+      }
+      50% {
+        transform: scale(1.06);
+        color: #fee500;
+        text-shadow: 0 0 30px #fee500, 0 0 50px rgba(254, 229, 0, 0.95);
+      }
+      100% {
+        transform: scale(1.03);
+        color: #ffffff;
+        text-shadow: 0 0 20px #fee500;
+      }
+    }
+
+    .digital-clock.golden-flash {
+      animation: goldenFlashPulse 0.12s ease-in-out infinite alternate;
+    }
+
+    .digital-clock.golden-flash .ms {
+      color: #ffffff;
+      text-shadow: 0 0 30px #fee500;
+    }
+
+    /* 대형 남은 시간 디스플레이 */
+    .remaining-box {
+      margin-top: 14px;
+      background: #141418;
+      border: 1px solid #2a2a36;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.1s ease;
+    }
+
+    .remaining-box.in-golden {
+      border-color: var(--kakao-yellow);
+      background: #2a281e;
+      box-shadow: 0 0 25px rgba(254, 229, 0, 0.45);
+    }
+
+    .remaining-label {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .target-chip {
+      background: rgba(254, 229, 0, 0.15);
+      color: var(--kakao-yellow);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      border: 1px solid rgba(254, 229, 0, 0.3);
+    }
+
+    .remaining-timer {
+      font-size: 2.35rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 2px;
+      transition: transform 0.08s ease, color 0.08s ease;
+    }
+
+    .remaining-timer .sub-ms {
+      font-size: 1.6rem;
+      color: #9e9eb0;
+      font-weight: 700;
+    }
+
+    .remaining-timer.golden {
+      color: var(--kakao-yellow);
+      transform: scale(1.08);
+      text-shadow: 0 0 28px rgba(254, 229, 0, 0.95);
+    }
+
+    .remaining-timer.golden .sub-ms {
+      color: #ffffff;
+    }
+
+    .remaining-timer.danger {
+      color: var(--danger);
+    }
+
+    .remaining-desc {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* 카운트다운 바 & 구간 마킹 */
+    .countdown-bar-wrap {
+      margin-top: 14px;
+      background: #141418;
+      border-radius: 999px;
+      height: 12px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid #282832;
+    }
+
+    .danger-zone-marker {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      background: rgba(255, 71, 87, 0.4);
+      border-left: 1px dashed #ff4757;
+      z-index: 1;
+    }
+
+    .golden-zone-marker {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      background: rgba(255, 179, 0, 0.6);
+      border-left: 2px solid #fff;
+      border-right: 2px solid #fff;
+      z-index: 2;
+    }
+
+    .countdown-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3a86ff, #fee500);
+      border-radius: 999px;
+      transition: width 0.04s linear;
+      position: relative;
+      z-index: 3;
+    }
+
+    .countdown-text {
+      margin-top: 8px;
+      font-size: 0.88rem;
+      font-variant-numeric: tabular-nums;
+      min-height: 22px;
+    }
+
+    .countdown-text b {
+      color: #fff;
+    }
+
+    .countdown-text.fire {
+      color: var(--kakao-yellow);
+      font-weight: 800;
+    }
+
+    .countdown-text.danger {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    /* 터치 버튼 */
+    .touch-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #action-btn {
+      width: 100%;
+      height: 96px;
+      background: var(--kakao-yellow);
+      color: #191919;
+      border: none;
+      border-radius: 18px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(254, 229, 0, 0.28);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      touch-action: none;
+      transition: transform 0.05s ease, background-color 0.1s;
+    }
+
+    #action-btn:active, #action-btn.touching {
+      background: var(--kakao-yellow-hover);
+      transform: scale(0.97);
+      box-shadow: 0 4px 12px rgba(254, 229, 0, 0.2);
+    }
+
+    #action-btn .sub {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: rgba(25, 25, 25, 0.85);
+    }
+
+    /* 결과 피드백 카드 */
+    .feedback-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .feedback-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .result-grade {
+      font-size: 1.22rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .result-touch-sec {
+      font-size: 1.35rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .result-desc {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* 게이지 바 */
+    .gauge-container {
+      background: #151518;
+      border-radius: 10px;
+      padding: 10px 12px 14px;
+      border: 1px solid #282830;
+      position: relative;
+    }
+
+    .gauge-title {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .gauge-title b {
+      color: var(--kakao-yellow);
+    }
+
+    .gauge-track {
+      height: 20px;
+      border-radius: 10px;
+      background: #202028;
+      position: relative;
+      overflow: visible;
+      margin: 10px 0 6px;
+      display: flex;
+    }
+
+    .gauge-zone-danger {
+      position: absolute;
+      left: 12%;
+      width: 26%;
+      top: 0;
+      bottom: 0;
+      background: rgba(255, 71, 87, 0.4);
+      border-left: 1px dashed #ff4757;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.58rem;
+      color: #ff6b81;
+      font-weight: 700;
+    }
+
+    .gauge-zone-golden {
+      position: absolute;
+      left: 38%;
+      width: 32%;
+      top: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, #ffb300, #fee500);
+      border-radius: 4px;
+      box-shadow: 0 0 14px rgba(254, 229, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.68rem;
+      font-weight: 900;
+      color: #000;
+      z-index: 2;
+    }
+
+    .gauge-zone-late {
+      position: absolute;
+      left: 70%;
+      width: 30%;
+      top: 0;
+      bottom: 0;
+      background: rgba(255, 165, 2, 0.3);
+      border-radius: 0 10px 10px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.58rem;
+      color: #ffa502;
+      font-weight: 700;
+    }
+
+    .gauge-pointer {
+      position: absolute;
+      top: -6px;
+      width: 16px;
+      height: 16px;
+      background: #ffffff;
+      border: 2px solid #000;
+      border-radius: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.95);
+      display: none;
+      z-index: 10;
+      transition: left 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    .gauge-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.66rem;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      margin-top: 4px;
+    }
+
+    .gauge-labels .center-target {
+      color: var(--kakao-yellow);
+      font-weight: 800;
+    }
+
+    /* 코칭 팁 배너 */
+    .coaching-card {
+      background: rgba(254, 229, 0, 0.08);
+      border: 1px solid rgba(254, 229, 0, 0.25);
+      border-radius: 12px;
+      padding: 11px 13px;
+      font-size: 0.82rem;
+      color: #e6e6e6;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.5;
+    }
+
+    .coaching-icon {
+      font-size: 1.15rem;
+      flex-shrink: 0;
+    }
+
+    /* 통계 카드 */
+    .stats-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .stats-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .stats-reset-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.74rem;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      text-align: center;
+    }
+
+    .stat-item {
+      background: #17171b;
+      padding: 8px 4px;
+      border-radius: 9px;
+    }
+
+    .stat-val {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-lbl {
+      font-size: 0.66rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .history-list {
+      margin-top: 10px;
+      max-height: 140px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .history-item {
+      background: #17171b;
+      border-radius: 7px;
+      padding: 7px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.76rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .footer-options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 4px;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge-wrap">
+        <span class="brand-tag"><span class="k-icon">B</span> kakaobank.com</span>
+        <div class="sync-status">
+          <div class="dot" id="sync-dot"></div>
+          <span id="sync-text">카카오뱅크 동기화 중...</span>
+          <button class="resync-btn" onclick="forceResyncKakao(event)">🔄 동기화</button>
+        </div>
+      </div>
+      <h1>카카오뱅크 오픈런 타이밍 트레이너</h1>
+    </header>
+
+    <!-- 실전 타깃 팁 배너 -->
+    <div class="target-banner">
+      <div>🎯 확장 골든존: <span class="highlight" id="banner-target-range">59.400s ~ 59.620s (폭 220ms 여유)</span></div>
+      <div class="sub">신호등 리듬: 🔴3초(준비) ➔ 🟡2초(대기) ➔ 🟠1초(긴장) ➔ 🔥0초(쾅!)</div>
+    </div>
+
+    <!-- 주기 모드 선택 -->
+    <div class="mode-selector">
+      <button class="mode-btn" data-interval="5" onclick="setMode(5)">⚡ 5초 속성</button>
+      <button class="mode-btn active" data-interval="10" onclick="setMode(10)">⏱️ 10초 훈련 (추천)</button>
+      <button class="mode-btn" data-interval="60" onclick="setMode(60)">🎯 정각 실전</button>
+    </div>
+
+    <!-- 🚦 3-2-1 리듬 신호등 바 -->
+    <div class="traffic-light-box" id="traffic-light-box">
+      <div class="light-item" id="light-3">
+        <div class="light-bulb"></div>
+        <span class="light-text">3 준비</span>
+      </div>
+      <div class="light-item" id="light-2">
+        <div class="light-bulb"></div>
+        <span class="light-text">2 대기</span>
+      </div>
+      <div class="light-item" id="light-1">
+        <div class="light-bulb"></div>
+        <span class="light-text">1 긴장</span>
+      </div>
+      <div class="light-item" id="light-go">
+        <div class="light-bulb"></div>
+        <span class="light-text">🔥 쾅! 터치</span>
+      </div>
+    </div>
+
+    <!-- 대형 디지털 시계 및 카운트다운 카드 -->
+    <div class="clock-card" id="clock-card">
+      <div class="clock-title" id="clock-title">🟡 카카오뱅크 실시간 서버 시계</div>
+      <div class="digital-clock" id="clock-display">
+        00:00:00<span class="ms">.000</span>
+      </div>
+
+      <!-- 누르는 데까지 남은 시간 디스플레이 -->
+      <div class="remaining-box" id="remaining-box">
+        <div class="remaining-label">
+          <span>⚡ 누르는 타이밍까지 남은 시간</span>
+          <span class="target-chip" id="target-chip">골든존: 09.400s ~ 09.620s</span>
+        </div>
+        <div class="remaining-timer" id="remaining-timer">
+          <span class="sign" id="remain-sign">-</span><span class="val" id="remain-sec">0</span><span class="sub-ms" id="remain-ms">.000초</span>
+        </div>
+        <div class="remaining-desc" id="remaining-desc">
+          신호등 리듬을 타고 <b>0.000초</b> 순간에 폰을 누르세요!
+        </div>
+      </div>
+
+      <div class="countdown-bar-wrap">
+        <div class="danger-zone-marker" id="danger-zone-marker" title="위험 구간"></div>
+        <div class="golden-zone-marker" id="golden-zone-marker" title="확장 골든존 (220ms)"></div>
+        <div class="countdown-bar" id="countdown-bar"></div>
+      </div>
+      <div class="countdown-text" id="countdown-text">
+        골든존까지 <b>--.--초</b> 남음
+      </div>
+    </div>
+
+    <!-- ⏱️ 정밀 타이밍 물리 진자(Pendulum) 훈련 카드 -->
+    <div class="pendulum-card" id="pendulum-card">
+      <div class="pendulum-header">
+        <span>⏱️ 정밀 타이밍 물리 진자 (Pendulum)</span>
+        <span>타깃: <b>정중앙 0.000s 관통</b></span>
+      </div>
+      <div class="pendulum-canvas-wrap">
+        <canvas id="pendulum-canvas" width="480" height="140"></canvas>
+      </div>
+      <div class="pendulum-guide">
+        💡 <b>시각 훈련법:</b> 추가 좌우로 흔들리다 <strong>정중앙 황금선에 닿는 순간</strong> 스마트폰을 누르세요!
+      </div>
+    </div>
+
+    <!-- 반응속도 터치 영역 -->
+    <div class="touch-area">
+      <button id="action-btn" type="button">
+        <span>신청하기 (터치)</span>
+        <span class="sub" id="btn-subtext">🎯 신호등 🔥0초 순간에 스마트폰 화면을 누르세요!</span>
+      </button>
+    </div>
+
+    <!-- 결과 피드백 카드 -->
+    <div class="feedback-card" id="feedback-card">
+      <div class="feedback-header">
+        <div class="result-grade" id="result-grade">
+          <span id="grade-badge">대기 중</span>
+        </div>
+        <div class="result-touch-sec" id="result-touch-sec">--.---초</div>
+      </div>
+      <div class="result-desc" id="result-desc">
+        웹 화면의 3-2-1 신호등과 0.000초 카운트다운을 보며 터치해보세요!
+      </div>
+
+      <!-- 3구간 전용 게이지 -->
+      <div class="gauge-container">
+        <div class="gauge-title">
+          <span>실전 타이밍 게이지</span>
+          <span>골든존: <b id="gauge-target-label">9.400s ~ 9.620s</b></span>
+        </div>
+        <div class="gauge-track">
+          <div class="gauge-zone-danger">튕김위험⚠️</div>
+          <div class="gauge-zone-golden" id="gauge-box">골든존(여유) 🔥</div>
+          <div class="gauge-zone-late">지각/병목🐢</div>
+          <div class="gauge-pointer" id="gauge-pointer"></div>
+        </div>
+        <div class="gauge-labels">
+          <span id="label-danger">&lt; 9.400s (위험)</span>
+          <span class="center-target" id="label-center">🎯 9.500s 최적</span>
+          <span id="label-late">&gt; 9.620s (지각)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 스마트 코칭 팁 -->
+    <div class="coaching-card" id="coaching-card">
+      <div class="coaching-icon">💡</div>
+      <div id="coaching-text">
+        <strong>웹을 보며 폰 누르는 팁:</strong> PC 화면의 <strong>[3 빨강 ➔ 2 노랑 ➔ 1 주황]</strong> 신호등을 보며 리듬을 타다가, <strong>[🔥 0초 쾅!]</strong>으로 바뀌는 찰나에 스마트폰을 누르면 220ms 여유 골든존에 100% 적중합니다!
+      </div>
+    </div>
+
+    <!-- 통계 및 분석 대시보드 -->
+    <div class="stats-card">
+      <div class="stats-title">
+        <span>훈련 통계</span>
+        <button class="stats-reset-btn" onclick="resetStats()">초기화</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-val" id="stat-total">0</div>
+          <div class="stat-lbl">총 시도</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" id="stat-golden">0%</div>
+          <div class="stat-lbl">골든존 적중</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" id="stat-pass">0%</div>
+          <div class="stat-lbl">통과 성공률</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" id="stat-avg">--s</div>
+          <div class="stat-lbl">평균 터치</div>
+        </div>
+      </div>
+
+      <div class="history-list" id="history-list"></div>
+    </div>
+
+    <!-- 하단 부가 옵션 -->
+    <div class="footer-options">
+      <label class="toggle-wrap">
+        <input type="checkbox" id="sound-toggle" checked>
+        <span>결과 효과음</span>
+      </label>
+      <label class="toggle-wrap">
+        <input type="checkbox" id="beep-toggle" checked>
+        <span>3-2-1 신호등 비프음 (리듬 메트로놈)</span>
+      </label>
+      <label class="toggle-wrap">
+        <input type="checkbox" id="vibrate-toggle" checked>
+        <span>진동</span>
+      </label>
+      <span id="sync-detail">RTT: --ms</span>
+    </div>
+  </div>
+
+  <script>
+    let currentInterval = 10;
+    let kakaoTimeOffset = 0;
+    let lastRtt = 0;
+    let isSyncing = false;
+    let records = [];
+
+    // Web Audio API
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function playTone(freq, type, duration, gainLevel = 0.1) {
+      if (!document.getElementById('sound-toggle').checked) return;
+      try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(gainLevel, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch(e) {}
+    }
+
+    function playCountdownBeep(freq, duration = 0.08) {
+      if (!document.getElementById('beep-toggle').checked) return;
+      try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch(e) {}
+    }
+
+    function triggerFeedbackSound(grade) {
+      if (grade === 'PERFECT') {
+        playTone(523.25, 'triangle', 0.15, 0.18);
+        setTimeout(() => playTone(659.25, 'triangle', 0.15, 0.18), 80);
+        setTimeout(() => playTone(783.99, 'triangle', 0.28, 0.22), 160);
+      } else if (grade === 'SAFE') {
+        playTone(587.33, 'sine', 0.15, 0.14);
+      } else {
+        playTone(160, 'sawtooth', 0.25, 0.18);
+      }
+    }
+
+    function triggerHaptic(grade) {
+      if (!document.getElementById('vibrate-toggle').checked) return;
+      if (navigator.vibrate) {
+        if (grade === 'PERFECT') navigator.vibrate([40, 50, 70]);
+        else if (grade === 'DANGER' || grade === 'EARLY') navigator.vibrate([140]);
+        else navigator.vibrate([40]);
+      }
+    }
+
+    // 카카오뱅크 시계 동기화
+    async function syncClock() {
+      if (isSyncing) return;
+      isSyncing = true;
+      const syncText = document.getElementById('sync-text');
+      const syncDetail = document.getElementById('sync-detail');
+      const syncDot = document.getElementById('sync-dot');
+
+      try {
+        const t0 = performance.now();
+        const res = await fetch(`/api/time-sync?client_send=${Date.now()}`);
+        const t1 = performance.now();
+        const data = await res.json();
+
+        lastRtt = Math.round(t1 - t0);
+        const estimatedKakaoNow = data.server_time + (lastRtt / 2);
+        kakaoTimeOffset = estimatedKakaoNow - Date.now();
+
+        syncText.innerText = `카카오뱅크 동기화 (${data.kakaobank_offset_ms > 0 ? '+' : ''}${data.kakaobank_offset_ms}ms)`;
+        syncDetail.innerText = `카카오 RTT ${data.kakaobank_rtt_ms}ms`;
+        syncDot.style.background = '#34c759';
+      } catch (err) {
+        syncText.innerText = `동기화 지연 중`;
+        syncDot.style.background = '#ff4d4f';
+      } finally {
+        isSyncing = false;
+      }
+    }
+
+    async function forceResyncKakao(e) {
+      if (e) e.stopPropagation();
+      document.getElementById('sync-text').innerText = '카카오뱅크 재동기화 중...';
+      try {
+        await fetch('/api/kakaobank/resync', { method: 'POST' });
+        await syncClock();
+      } catch(e) {}
+    }
+
+    syncClock();
+    setInterval(syncClock, 6000);
+
+    // 모드 설정
+    function setMode(sec) {
+      currentInterval = sec;
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.interval) === sec);
+      });
+
+      const goldenStart = sec - 0.600; // 9.400s
+      const goldenEnd = sec - 0.380;   // 9.620s
+      const dangerStart = sec - 0.750; // 9.250s
+      const dangerEnd = goldenStart;   // 9.400s
+
+      const formatSec = (s) => `${String(Math.floor(s)).padStart(2, '0')}.${String(Math.round((s % 1) * 1000)).padStart(3, '0')}초`;
+
+      document.getElementById('banner-target-range').innerText = `${sec === 60 ? '59.400s ~ 59.620s (폭 220ms 여유)' : `${formatSec(goldenStart)} ~ ${formatSec(goldenEnd)}`}`;
+      document.getElementById('target-chip').innerText = `골든존: ${goldenStart.toFixed(3)}s ~ ${goldenEnd.toFixed(3)}s`;
+      document.getElementById('gauge-target-label').innerText = `${goldenStart.toFixed(3)}s ~ ${goldenEnd.toFixed(3)}s`;
+
+      const dangerMarker = document.getElementById('danger-zone-marker');
+      const goldenMarker = document.getElementById('golden-zone-marker');
+
+      dangerMarker.style.left = `${(dangerStart / sec) * 100}%`;
+      dangerMarker.style.width = `${((dangerEnd - dangerStart) / sec) * 100}%`;
+
+      goldenMarker.style.left = `${(goldenStart / sec) * 100}%`;
+      goldenMarker.style.width = `${((goldenEnd - goldenStart) / sec) * 100}%`;
+
+      resetStats();
+    }
+
+    // 시계 및 신호등 렌더링 루프
+    const clockDisplay = document.getElementById('clock-display');
+    const clockCard = document.getElementById('clock-card');
+    const countdownBar = document.getElementById('countdown-bar');
+    const countdownText = document.getElementById('countdown-text');
+
+    const remainingBox = document.getElementById('remaining-box');
+    const remainingTimer = document.getElementById('remaining-timer');
+    const remainSign = document.getElementById('remain-sign');
+    const remainSec = document.getElementById('remain-sec');
+    const remainMs = document.getElementById('remain-ms');
+    const remainingDesc = document.getElementById('remaining-desc');
+
+    const light3 = document.getElementById('light-3');
+    const light2 = document.getElementById('light-2');
+    const light1 = document.getElementById('light-1');
+    const lightGo = document.getElementById('light-go');
+
+    let lastBeepSec = -1;
+
+    function renderClock() {
+      const kakaoDate = new Date(Date.now() + kakaoTimeOffset);
+      const h = String(kakaoDate.getHours()).padStart(2, '0');
+      const m = String(kakaoDate.getMinutes()).padStart(2, '0');
+      const s = String(kakaoDate.getSeconds()).padStart(2, '0');
+      const ms = String(kakaoDate.getMilliseconds()).padStart(3, '0');
+
+      clockDisplay.innerHTML = `${h}:${m}:${s}<span class="ms">.${ms}</span>`;
+
+      const currentSecInCycle = (kakaoDate.getSeconds() % currentInterval) + (kakaoDate.getMilliseconds() / 1000);
+      const progressPercent = (currentSecInCycle / currentInterval) * 100;
+      countdownBar.style.width = `${progressPercent}%`;
+
+      const goldenStart = currentInterval - 0.600; // 9.400s (골든존 시작)
+      const goldenEnd = currentInterval - 0.380;   // 9.620s (골든존 끝, 220ms 폭)
+      const flashEnd = currentInterval - 0.200;    // 9.800s (시각 플래시 0.4초 지속)
+      const dangerStart = currentInterval - 0.750; // 9.250s
+
+      const timeToGolden = goldenStart - currentSecInCycle;
+
+      // 🚦 F1 스타일 3-2-1 신호등 & 비프 카운트다운
+      light3.className = 'light-item';
+      light2.className = 'light-item';
+      light1.className = 'light-item';
+      lightGo.className = 'light-item';
+
+      if (timeToGolden > 2.0 && timeToGolden <= 3.0) {
+        light3.classList.add('active-3');
+        if (lastBeepSec !== 3) {
+          playCountdownBeep(440, 0.08); // 라(A4)
+          lastBeepSec = 3;
+        }
+      } else if (timeToGolden > 1.0 && timeToGolden <= 2.0) {
+        light2.classList.add('active-2');
+        if (lastBeepSec !== 2) {
+          playCountdownBeep(440, 0.08);
+          lastBeepSec = 2;
+        }
+      } else if (timeToGolden > 0.0 && timeToGolden <= 1.0) {
+        light1.classList.add('active-1');
+        if (lastBeepSec !== 1) {
+          playCountdownBeep(554.37, 0.1); // 도#(C#5)
+          lastBeepSec = 1;
+        }
+      } else if (currentSecInCycle >= goldenStart && currentSecInCycle <= flashEnd) {
+        lightGo.classList.add('active-go');
+        if (lastBeepSec !== 0) {
+          playCountdownBeep(880, 0.22); // 높은 라(A5) 빵!
+          lastBeepSec = 0;
+        }
+      } else {
+        lastBeepSec = -1;
+      }
+
+      // [누르는 데까지 남은 시간 초정밀 계산]
+      if (currentSecInCycle < goldenStart) {
+        const diff = goldenStart - currentSecInCycle;
+        const sPart = Math.floor(diff);
+        const msPart = Math.floor((diff % 1) * 1000);
+
+        remainSign.innerText = '-';
+        remainSec.innerText = sPart;
+        remainMs.innerText = `.${String(msPart).padStart(3, '0')}초`;
+        remainingBox.classList.remove('in-golden');
+
+        if (diff <= 0.150) {
+          remainingTimer.className = 'remaining-timer danger';
+          remainingDesc.innerHTML = '⚠️ <b>0.000초가 될 때까지 기다리세요! (튕김 주의)</b>';
+        } else {
+          remainingTimer.className = 'remaining-timer';
+          remainingDesc.innerHTML = '신호등을 보며 <b>0.000초</b> 순간에 폰을 누르세요!';
+        }
+      } else if (currentSecInCycle >= goldenStart && currentSecInCycle <= flashEnd) {
+        // [골든존 순간! 0.4초간 눈에 띄게 반짝임]
+        remainSign.innerText = '🔥';
+        remainSec.innerText = '0';
+        remainMs.innerText = '.000초';
+        remainingBox.classList.add('in-golden');
+        remainingTimer.className = 'remaining-timer golden';
+        remainingDesc.innerHTML = '👑 <b style="color:var(--kakao-yellow); font-size:0.88rem;">지금 누르세요! (골든존 220ms 여유!)</b>';
+      } else {
+        const diffAfter = currentSecInCycle - goldenStart;
+        const sPart = Math.floor(diffAfter);
+        const msPart = Math.floor((diffAfter % 1) * 1000);
+
+        remainSign.innerText = '+';
+        remainSec.innerText = sPart;
+        remainMs.innerText = `.${String(msPart).padStart(3, '0')}초`;
+        remainingBox.classList.remove('in-golden');
+        remainingTimer.className = 'remaining-timer';
+        remainingDesc.innerHTML = '🐢 <b>지각 구간</b> (다음 주기 0.000초를 노리세요)';
+      }
+
+      // 시계 플래시 (골든존 진입 시 0.4초간 시원하게 반짝임)
+      if (currentSecInCycle >= goldenStart && currentSecInCycle <= flashEnd) {
+        clockCard.classList.add('golden-flash');
+        clockDisplay.classList.add('golden-flash');
+        countdownText.className = 'countdown-text fire';
+        countdownText.innerHTML = `👑 <b>지금 누르세요! (${goldenStart.toFixed(2)}~${goldenEnd.toFixed(2)}초 골든존)</b>`;
+      } else {
+        clockCard.classList.remove('golden-flash');
+        clockDisplay.classList.remove('golden-flash');
+
+        if (currentSecInCycle >= dangerStart && currentSecInCycle < goldenStart) {
+          countdownText.className = 'countdown-text danger';
+          countdownText.innerHTML = `⚠️ <b>위험 구간! 튕김 주의 (아직 누르지 마세요!)</b>`;
+        } else {
+          countdownText.className = 'countdown-text';
+          let timeToGold = goldenStart - currentSecInCycle;
+          if (timeToGold < 0) timeToGold += currentInterval;
+          countdownText.innerHTML = `골든존까지 <b>${timeToGold.toFixed(2)}초</b> 남음`;
+        }
+      }
+
+      // ⏱️ 정밀 물리 진자 캔버스 렌더링
+      const goldenCenter = currentInterval - 0.500;
+      drawPendulum(currentSecInCycle, goldenCenter, goldenStart, goldenEnd);
+
+      requestAnimationFrame(renderClock);
+    }
+
+    // 정밀 물리 진자(Pendulum) 캔버스 드로잉 엔진
+    const pCanvas = document.getElementById('pendulum-canvas');
+    const pCtx = pCanvas ? pCanvas.getContext('2d') : null;
+    const pendulumCard = document.getElementById('pendulum-card');
+
+    function drawPendulum(secInCycle, goldenCenter, goldenStart, goldenEnd) {
+      if (!pCtx || !pCanvas) return;
+
+      const w = pCanvas.width;
+      const h = pCanvas.height;
+      pCtx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = 16;
+      const L = h - 38; // 진자 길이
+
+      // 골든존 중심 대비 시간 오차 (초)
+      let diff = secInCycle - goldenCenter;
+      if (diff > (currentInterval / 2)) diff -= currentInterval;
+      if (diff < -(currentInterval / 2)) diff += currentInterval;
+
+      // 진자 각도: 0.000초 순간에 정중앙(theta = 0)을 최고 속도로 수직 관통!
+      const thetaMax = 0.62; // 약 35.5도
+      const swingPeriod = 2.0; // 2초 주기 왕복 스윙
+      const theta = thetaMax * Math.sin((2 * Math.PI * diff) / swingPeriod);
+
+      const bobX = cx + L * Math.sin(theta);
+      const bobY = cy + L * Math.cos(theta);
+
+      const inGolden = (secInCycle >= goldenStart && secInCycle <= goldenEnd);
+
+      // 1. 배경 가이드 원호 점선 (Arc)
+      pCtx.beginPath();
+      pCtx.arc(cx, cy, L, Math.PI/2 - thetaMax - 0.06, Math.PI/2 + thetaMax + 0.06);
+      pCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      pCtx.lineWidth = 1.5;
+      pCtx.setLineDash([4, 4]);
+      pCtx.stroke();
+      pCtx.setLineDash([]);
+
+      // 2. 골든존 타깃 부채꼴 영역
+      const goldenTheta = thetaMax * Math.sin((2 * Math.PI * 0.11) / swingPeriod);
+      pCtx.beginPath();
+      pCtx.moveTo(cx, cy);
+      pCtx.arc(cx, cy, L + 16, Math.PI/2 - goldenTheta, Math.PI/2 + goldenTheta);
+      pCtx.fillStyle = inGolden ? 'rgba(254, 229, 0, 0.24)' : 'rgba(254, 229, 0, 0.08)';
+      pCtx.fill();
+
+      // 3. 중앙 0.000s 골든 게이트 수직선 (Target Gate)
+      pCtx.beginPath();
+      pCtx.moveTo(cx, cy + 10);
+      pCtx.lineTo(cx, h - 4);
+      pCtx.strokeStyle = inGolden ? '#fee500' : 'rgba(254, 229, 0, 0.65)';
+      pCtx.lineWidth = inGolden ? 3.5 : 2;
+      pCtx.shadowColor = inGolden ? '#fee500' : 'transparent';
+      pCtx.shadowBlur = inGolden ? 18 : 0;
+      pCtx.stroke();
+      pCtx.shadowBlur = 0;
+
+      // 중앙 타깃 텍스트
+      pCtx.font = inGolden ? 'bold 11px sans-serif' : '10px sans-serif';
+      pCtx.fillStyle = inGolden ? '#fee500' : '#8e8e93';
+      pCtx.textAlign = 'center';
+      pCtx.fillText('🎯 0.000s 골든 게이트', cx, h - 6);
+
+      // 좌우 보조 눈금
+      [-0.4, -0.2, 0.2, 0.4].forEach(offsetSec => {
+        const t = thetaMax * Math.sin((2 * Math.PI * offsetSec) / swingPeriod);
+        const mx = cx + (L + 6) * Math.sin(t);
+        const my = cy + (L + 6) * Math.cos(t);
+        pCtx.beginPath();
+        pCtx.arc(mx, my, 2, 0, Math.PI * 2);
+        pCtx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+        pCtx.fill();
+      });
+
+      // 4. 진자 막대 (Chrome Rod)
+      pCtx.beginPath();
+      pCtx.moveTo(cx, cy);
+      pCtx.lineTo(bobX, bobY);
+      pCtx.strokeStyle = inGolden ? '#ffffff' : '#a0a0b8';
+      pCtx.lineWidth = inGolden ? 3.5 : 2.5;
+      pCtx.stroke();
+
+      // 5. 상단 피벗 힌지
+      pCtx.beginPath();
+      pCtx.arc(cx, cy, 5, 0, Math.PI * 2);
+      pCtx.fillStyle = inGolden ? '#fee500' : '#d0d0d8';
+      pCtx.fill();
+      pCtx.strokeStyle = '#fff';
+      pCtx.lineWidth = 1.5;
+      pCtx.stroke();
+
+      // 6. 하단 진자 추 (Bob) 레이저 조준선
+      pCtx.beginPath();
+      pCtx.moveTo(bobX, bobY);
+      pCtx.lineTo(bobX, bobY + 12);
+      pCtx.strokeStyle = inGolden ? '#ffffff' : '#fee500';
+      pCtx.lineWidth = 2;
+      pCtx.stroke();
+
+      // 진자 추 (황금빛 구체)
+      pCtx.beginPath();
+      pCtx.arc(bobX, bobY, 13, 0, Math.PI * 2);
+      const grad = pCtx.createRadialGradient(bobX - 3, bobY - 3, 2, bobX, bobY, 13);
+      if (inGolden) {
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.5, '#fee500');
+        grad.addColorStop(1, '#e5a500');
+        pCtx.shadowColor = '#fee500';
+        pCtx.shadowBlur = 22;
+      } else {
+        grad.addColorStop(0, '#fff48d');
+        grad.addColorStop(0.7, '#fee500');
+        grad.addColorStop(1, '#c9a500');
+        pCtx.shadowColor = 'rgba(254, 229, 0, 0.4)';
+        pCtx.shadowBlur = 8;
+      }
+      pCtx.fillStyle = grad;
+      pCtx.fill();
+      pCtx.shadowBlur = 0;
+      pCtx.strokeStyle = inGolden ? '#ffffff' : '#222';
+      pCtx.lineWidth = inGolden ? 2 : 1.5;
+      pCtx.stroke();
+
+      // 7. 골든존 통과 순간 충격파 링 (Shockwave Ring)
+      if (inGolden) {
+        if (pendulumCard) pendulumCard.classList.add('in-golden');
+        pCtx.beginPath();
+        pCtx.arc(bobX, bobY, 20, 0, Math.PI * 2);
+        pCtx.strokeStyle = 'rgba(254, 229, 0, 0.75)';
+        pCtx.lineWidth = 2;
+        pCtx.stroke();
+      } else {
+        if (pendulumCard) pendulumCard.classList.remove('in-golden');
+      }
+    }
+
+    function resizePendulumCanvas() {
+      if (!pCanvas) return;
+      const wrap = pCanvas.parentElement;
+      if (wrap && wrap.clientWidth > 0) {
+        pCanvas.width = wrap.clientWidth;
+        pCanvas.height = 140;
+      }
+    }
+    window.addEventListener('resize', resizePendulumCanvas);
+    setTimeout(resizePendulumCanvas, 50);
+
+    requestAnimationFrame(renderClock);
+
+    setMode(10);
+
+    // 터치/클릭 이벤트
+    const btn = document.getElementById('action-btn');
+    let isRequestInProgress = false;
+
+    async function handleTrigger(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      if (isRequestInProgress) return;
+      isRequestInProgress = true;
+
+      btn.classList.add('touching');
+      setTimeout(() => btn.classList.remove('touching'), 120);
+
+      const touchKakaoMs = Date.now() + kakaoTimeOffset;
+
+      try {
+        const response = await fetch(`/api/click?interval=${currentInterval}&client_touch_ms=${touchKakaoMs}`, {
+          method: 'POST',
+        });
+        const data = await response.json();
+        updateFeedback(data);
+      } catch (err) {
+        console.error("Click API failed:", err);
+      } finally {
+        isRequestInProgress = false;
+      }
+    }
+
+    if (window.PointerEvent) {
+      btn.addEventListener('pointerdown', handleTrigger, { passive: false });
+    } else {
+      btn.addEventListener('touchstart', handleTrigger, { passive: false });
+      btn.addEventListener('mousedown', handleTrigger);
+    }
+
+    // 결과 피드백 & 게이지 갱신
+    function updateFeedback(data) {
+      const gradeBadge = document.getElementById('grade-badge');
+      const resultTouchSec = document.getElementById('result-touch-sec');
+      const resultDesc = document.getElementById('result-desc');
+      const pointer = document.getElementById('gauge-pointer');
+
+      triggerFeedbackSound(data.grade);
+      triggerHaptic(data.grade);
+
+      gradeBadge.innerText = `[${data.grade}]`;
+      gradeBadge.style.color = data.badge_color;
+
+      resultTouchSec.innerText = data.sec_in_cycle;
+      resultTouchSec.style.color = data.badge_color;
+
+      resultDesc.innerHTML = `터치 시각: <b>${data.touch_time_str}</b><br><b>${data.grade_title}</b><br>${data.grade_desc}`;
+
+      // 게이지 위치 매핑 (골든존 중심 9.500s -> 54%)
+      const diffFromCenter = data.diff_from_center;
+      let pct = 54 + (diffFromCenter / 450.0) * 46.0;
+      pct = Math.max(2, Math.min(98, pct));
+
+      pointer.style.display = 'block';
+      pointer.style.left = `${pct}%`;
+      pointer.style.borderColor = data.badge_color;
+
+      records.unshift(data);
+      if (records.length > 30) records.pop();
+      updateStats();
+    }
+
+    // 통계 분석
+    function updateStats() {
+      if (records.length === 0) return;
+
+      const total = records.length;
+      const perfectCount = records.filter(r => r.grade === 'PERFECT').length;
+      const passCount = records.filter(r => r.grade === 'PERFECT' || r.grade === 'SAFE').length;
+
+      const goldenRate = Math.round((perfectCount / total) * 100);
+      const passRate = Math.round((passCount / total) * 100);
+
+      const sumSec = records.reduce((acc, cur) => acc + cur.sec_float, 0);
+      const avgSec = (sumSec / total).toFixed(3);
+
+      document.getElementById('stat-total').innerText = total;
+      document.getElementById('stat-golden').innerText = `${goldenRate}%`;
+      document.getElementById('stat-pass').innerText = `${passRate}%`;
+      document.getElementById('stat-avg').innerText = `${avgSec}초`;
+
+      const historyList = document.getElementById('history-list');
+      historyList.innerHTML = records.slice(0, 8).map(r => `
+        <div class="history-item">
+          <span style="color:#aaa">${r.sec_in_cycle}</span>
+          <span style="font-weight:700; color:${r.badge_color}">실전 +${Math.max(0, r.simulated_arrive_diff_ms)}ms</span>
+          <span style="background:${r.badge_color}22; color:${r.badge_color}; font-weight:700; padding:2px 6px; border-radius:4px;">${r.grade}</span>
+        </div>
+      `).join('');
+
+      updateCoachingAdvice(records[0]);
+    }
+
+    function updateCoachingAdvice(last) {
+      const coachingText = document.getElementById('coaching-text');
+      if (!last) return;
+
+      if (last.grade === 'PERFECT') {
+        coachingText.innerHTML = `<strong>👑 완벽한 골든존 적중!</strong> 화면 시계 <strong>${last.sec_in_cycle}</strong>에 눌렀습니다. 실전 카카오뱅크 서버에 약 <strong>+${Math.max(0, Math.round(last.simulated_arrive_diff_ms))}ms</strong>로 여유 있게 1등 안착합니다! 신호등 리듬을 기억하세요.`;
+      } else if (last.grade === 'DANGER') {
+        coachingText.innerHTML = `<strong>⚠️ 튕김 위험:</strong> ${last.sec_in_cycle}에 눌러 정각 이전 컷오프 위험이 있습니다. <strong>신호등이 주황(1)에서 불꽃(🔥)으로 바뀌는 찰나까지</strong> 조금만 더 기다리세요!`;
+      } else if (last.grade === 'EARLY') {
+        coachingText.innerHTML = `<strong>❌ 너무 빠릅니다:</strong> ${last.sec_in_cycle}은 정각 이전 조기 컷오프입니다. 3-2-1 신호등 박자를 끝까지 타세요.`;
+      } else {
+        coachingText.innerHTML = `<strong>🐢 지각 구간:</strong> 이미 트래픽이 큐를 채우기 시작합니다. 신호등 <strong>🔥0초 불꽃이 켜지자마자 망설임 없이</strong> 폰을 터치하세요!`;
+      }
+    }
+
+    function resetStats() {
+      records = [];
+      document.getElementById('stat-total').innerText = '0';
+      document.getElementById('stat-golden').innerText = '0%';
+      document.getElementById('stat-pass').innerText = '0%';
+      document.getElementById('stat-avg').innerText = '--s';
+      document.getElementById('history-list').innerHTML = '';
+      document.getElementById('gauge-pointer').style.display = 'none';
+      document.getElementById('result-touch-sec').innerText = '--.---초';
+      document.getElementById('grade-badge').innerText = '대기 중';
+      document.getElementById('grade-badge').style.color = '#fff';
+      document.getElementById('result-desc').innerText = '신호등 리듬을 타면서 터치 연습을 시작하세요!';
+    }
+  </script>
+</body>
+</html>
