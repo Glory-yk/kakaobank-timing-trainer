@@ -1,9 +1,11 @@
 import os
+import sys
 import time
 import socket
 import threading
 import urllib.request
 import email.utils
+import webbrowser
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
@@ -11,6 +13,11 @@ from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+
+def get_resource_path(relative_path: str) -> str:
+    """PyInstaller 번들(_MEIPASS) 및 일반 개발 환경 모두에서 리소스 경로 탐색"""
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
 
 app = FastAPI(title="KakaoBank Golden Zone Trainer")
 
@@ -248,7 +255,7 @@ async def register_click(
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
-    index_file = os.path.join(os.path.dirname(__file__), "index.html")
+    index_file = get_resource_path("index.html")
     if os.path.exists(index_file):
         with open(index_file, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
@@ -329,5 +336,14 @@ if __name__ == "__main__":
     print("💡 [Tailscale 연결 완료]: 스마트폰에서 Tailscale 앱이 켜져 있으면,")
     print("   PC와 같은 Wi-Fi가 아니어도(LTE/5G/외부 어디서든) 위 주소로 바로 접속됩니다!")
     print("=" * 68 + "\n")
+
+    def auto_open_browser():
+        time.sleep(1.0)
+        try:
+            webbrowser.open(f"http://localhost:{port}")
+        except Exception:
+            pass
+
+    threading.Thread(target=auto_open_browser, daemon=True).start()
 
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")

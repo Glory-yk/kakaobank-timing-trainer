@@ -22,3 +22,8 @@ __pycache__/
 
 # Logs & temp
 *.log
+
+# PyInstaller / Build
+dist/
+build/
+*.spec

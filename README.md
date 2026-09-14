@@ -54,8 +54,14 @@
 
 ## 🚀 실행 및 접속
 
-### 간편 실행
+### 1. 단일 실행 파일 (.exe / 바이너리) 사용 (파이썬 설치 불필요)
+* GitHub 저장소의 **[Releases]** 또는 **[Actions]** 탭에서 빌드된 아티팩트를 다운로드하여 바로 실행할 수 있습니다.
+* Windows: `kakaobank-timing-trainer.exe` 더블 클릭
+* Mac: `kakaobank-timing-trainer-mac` 실행
 
+---
+
+### 2. 스크립트로 간편 실행 (파이썬 가상환경 자동 생성)
 * **Mac / Linux**:
   ```bash
   chmod +x start.sh
