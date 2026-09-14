@@ -272,9 +272,9 @@ def find_available_port(preferred_port: int = 8080) -> int:
 import subprocess
 import json
 
-def get_tailscale_info() -> dict:
+def get_tailscale_info(target_port: int = 8080) -> dict:
     """Tailscale IP 및 MagicDNS 도메인 자동 조회"""
-    info = {"ip": None, "domain": None}
+    info = {"ip": None, "domain": None, "https_port": "8443"}
     try:
         res = subprocess.run(["tailscale", "ip", "-4"], capture_output=True, text=True, timeout=1)
         if res.returncode == 0 and res.stdout.strip():
@@ -292,13 +292,28 @@ def get_tailscale_info() -> dict:
                 info["domain"] = dns_name
     except Exception:
         pass
+
+    try:
+        res3 = subprocess.run(["tailscale", "serve", "status", "--json"], capture_output=True, text=True, timeout=1)
+        if res3.returncode == 0:
+            sdata = json.loads(res3.stdout)
+            for hostport, val in sdata.get("Web", {}).items():
+                for _, h_info in val.get("Handlers", {}).items():
+                    proxy = h_info.get("Proxy", "")
+                    if f":{target_port}" in proxy:
+                        if ":" in hostport:
+                            info["https_port"] = hostport.split(":")[-1]
+                        else:
+                            info["https_port"] = "443"
+    except Exception:
+        pass
     return info
 
 
 if __name__ == "__main__":
     local_ip = get_local_ip()
     port = find_available_port(8080)
-    ts_info = get_tailscale_info()
+    ts_info = get_tailscale_info(port)
     
     print("\n" + "=" * 68)
     print("🚀 [kakaobank.com 오픈런 타이밍 트레이너 가동]")
@@ -308,7 +323,8 @@ if __name__ == "__main__":
     if ts_info["ip"]:
         print(f"🌐 Tailscale IP (LTE): http://{ts_info['ip']}:{port}")
     if ts_info["domain"]:
-        print(f"🔒 Tailscale HTTPS:    https://{ts_info['domain']}:{port}")
+        https_p = ts_info.get("https_port", "8443")
+        print(f"🔒 Tailscale HTTPS:    https://{ts_info['domain']}:{https_p}")
     print("-" * 68)
     print("💡 [Tailscale 연결 완료]: 스마트폰에서 Tailscale 앱이 켜져 있으면,")
     print("   PC와 같은 Wi-Fi가 아니어도(LTE/5G/외부 어디서든) 위 주소로 바로 접속됩니다!")

@@ -8,9 +8,9 @@ if [ ! -d "venv" ]; then
     ./venv/bin/pip install -r requirements.txt
 fi
 
-# Tailscale Serve 자동 백그라운드 등록 (LTE/외부 접속용)
+# Tailscale Serve 자동 백그라운드 등록 (LTE/외부 접속용 - 8443 포트로 외부 HTTPS 수신)
 if command -v tailscale >/dev/null 2>&1; then
-    tailscale serve --bg --https=8080 8080 >/dev/null 2>&1 || true
+    tailscale serve --bg --https=8443 8080 >/dev/null 2>&1 || true
 fi
 
 echo "🚀 오픈런 타이밍 트레이너 서버 실행 중..."

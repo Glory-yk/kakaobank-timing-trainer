@@ -64,6 +64,6 @@
 * **동일 Wi-Fi 스마트폰**: `http://192.168.0.7:8080`
 * **🌐 Tailscale 모바일 접속 (Wi-Fi 무관 / LTE·5G·외부 어디서든)**:
   - **직접 IP 접속**: `http://100.106.18.88:8080`
-  - **보안 HTTPS 접속**: `https://macmini.tail8902f6.ts.net:8080`
+  - **보안 HTTPS 접속**: `https://macmini.tail8902f6.ts.net:8443`
   - *(스마트폰에서 Tailscale 앱이 켜져 있으면 Wi-Fi 연결 여부와 무관하게 즉시 접속됩니다)*
 
