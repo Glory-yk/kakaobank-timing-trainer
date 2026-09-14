@@ -55,9 +55,15 @@
 ## 🚀 실행 및 접속
 
 ### 간편 실행
-```bash
-./start.sh
-```
+
+* **Mac / Linux**:
+  ```bash
+  chmod +x start.sh
+  ./start.sh
+  ```
+* **Windows**:
+  - `start.bat` 파일을 더블 클릭하거나 명령 프롬프트(CMD)에서 `start.bat` 실행
+  - *(가상환경 생성 및 라이브러리 설치가 자동으로 진행됩니다)*
 
 ### 접속 주소
 * **PC 브라우저**: `http://localhost:8080`
