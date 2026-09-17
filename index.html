@@ -980,7 +980,7 @@
         <canvas id="pendulum-canvas" width="480" height="140"></canvas>
       </div>
       <div class="pendulum-guide">
-        💡 <b>시각 훈련법:</b> 추가 좌우로 흔들리다 <strong>정중앙 황금선에 닿는 순간</strong> 스마트폰을 누르세요!
+        💡 <b>시각 훈련법:</b> 진자가 좌우로 흔들리다 <strong>정중앙 황금선에 닿는 순간</strong> 스마트폰을 누르세요!
       </div>
     </div>
 
@@ -1161,6 +1161,8 @@
       input.value = targetUrl;
       document.getElementById('target-host').innerText = targetHost(targetUrl);
       document.getElementById('clock-title').innerText = `🟡 ${targetHost(targetUrl)} 실시간 서버 시계`;
+      document.getElementById('sync-text').innerText = `${targetHost(targetUrl)} 동기화 중...`;
+      document.getElementById('sync-dot').style.background = '#ffb300';
       resetStats();
       syncClock();
     }
@@ -1173,16 +1175,18 @@
     async function syncClock() {
       if (isSyncing) return;
       isSyncing = true;
+      const requestedUrl = targetUrl;
       const syncText = document.getElementById('sync-text');
       const syncDetail = document.getElementById('sync-detail');
       const syncDot = document.getElementById('sync-dot');
 
       try {
         const t0 = performance.now();
-        const res = await fetch(`/api/time-sync?url=${encodeURIComponent(targetUrl)}&client_send=${Date.now()}`);
+        const res = await fetch(`/api/time-sync?url=${encodeURIComponent(requestedUrl)}&client_send=${Date.now()}`);
         const t1 = performance.now();
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || '서버시간을 읽을 수 없습니다.');
+        if (requestedUrl !== targetUrl) return;
 
         lastRtt = Math.round(t1 - t0);
         const estimatedTargetNow = data.server_time + (lastRtt / 2);
@@ -1196,6 +1200,7 @@
         syncDot.style.background = '#ff4d4f';
       } finally {
         isSyncing = false;
+        if (requestedUrl !== targetUrl) syncClock();
       }
     }
 
@@ -1275,11 +1280,11 @@
       countdownBar.style.width = `${progressPercent}%`;
 
       const goldenStart = currentInterval - 0.600; // 9.400s (골든존 시작)
+      const targetMoment = currentInterval - 0.500; // 9.500s (정확한 목표 순간)
       const goldenEnd = currentInterval - 0.380;   // 9.620s (골든존 끝, 220ms 폭)
-      const flashEnd = currentInterval - 0.200;    // 9.800s (시각 플래시 0.4초 지속)
       const dangerStart = currentInterval - 0.750; // 9.250s
 
-      const timeToGolden = goldenStart - currentSecInCycle;
+      const timeToTarget = targetMoment - currentSecInCycle;
 
       // 🚦 F1 스타일 3-2-1 신호등 & 비프 카운트다운
       light3.className = 'light-item';
@@ -1287,25 +1292,25 @@
       light1.className = 'light-item';
       lightGo.className = 'light-item';
 
-      if (timeToGolden > 2.0 && timeToGolden <= 3.0) {
+      if (timeToTarget > 2.0 && timeToTarget <= 3.0) {
         light3.classList.add('active-3');
         if (lastBeepSec !== 3) {
           playCountdownBeep(440, 0.08); // 라(A4)
           lastBeepSec = 3;
         }
-      } else if (timeToGolden > 1.0 && timeToGolden <= 2.0) {
+      } else if (timeToTarget > 1.0 && timeToTarget <= 2.0) {
         light2.classList.add('active-2');
         if (lastBeepSec !== 2) {
           playCountdownBeep(440, 0.08);
           lastBeepSec = 2;
         }
-      } else if (timeToGolden > 0.0 && timeToGolden <= 1.0) {
+      } else if (timeToTarget > 0.0 && timeToTarget <= 1.0) {
         light1.classList.add('active-1');
         if (lastBeepSec !== 1) {
           playCountdownBeep(554.37, 0.1); // 도#(C#5)
           lastBeepSec = 1;
         }
-      } else if (currentSecInCycle >= goldenStart && currentSecInCycle <= flashEnd) {
+      } else if (currentSecInCycle >= targetMoment && currentSecInCycle <= goldenEnd) {
         lightGo.classList.add('active-go');
         if (lastBeepSec !== 0) {
           playCountdownBeep(880, 0.22); // 높은 라(A5) 빵!
@@ -1316,33 +1321,40 @@
       }
 
       // [누르는 데까지 남은 시간 초정밀 계산]
-      if (currentSecInCycle < goldenStart) {
-        const diff = goldenStart - currentSecInCycle;
+      if (currentSecInCycle < targetMoment) {
+        const diff = targetMoment - currentSecInCycle;
         const sPart = Math.floor(diff);
         const msPart = Math.floor((diff % 1) * 1000);
 
         remainSign.innerText = '-';
         remainSec.innerText = sPart;
         remainMs.innerText = `.${String(msPart).padStart(3, '0')}초`;
-        remainingBox.classList.remove('in-golden');
+        remainingBox.classList.toggle('in-golden', currentSecInCycle >= goldenStart);
 
         if (diff <= 0.150) {
           remainingTimer.className = 'remaining-timer danger';
-          remainingDesc.innerHTML = '⚠️ <b>0.000초가 될 때까지 기다리세요! (튕김 주의)</b>';
+          remainingDesc.innerHTML = currentSecInCycle >= goldenStart
+            ? '⚠️ <b>골든존 진입! 정중앙 0.000초까지 잠시 기다리세요.</b>'
+            : '⚠️ <b>0.000초가 될 때까지 기다리세요! (튕김 주의)</b>';
         } else {
           remainingTimer.className = 'remaining-timer';
-          remainingDesc.innerHTML = '신호등을 보며 <b>0.000초</b> 순간에 폰을 누르세요!';
+          remainingDesc.innerHTML = currentSecInCycle >= goldenStart
+            ? '골든존에 진입했습니다. <b>정중앙 0.000초</b> 순간을 기다리세요!'
+            : '신호등을 보며 <b>0.000초</b> 순간에 폰을 누르세요!';
         }
-      } else if (currentSecInCycle >= goldenStart && currentSecInCycle <= flashEnd) {
-        // [골든존 순간! 0.4초간 눈에 띄게 반짝임]
-        remainSign.innerText = '🔥';
-        remainSec.innerText = '0';
-        remainMs.innerText = '.000초';
+      } else if (currentSecInCycle <= goldenEnd) {
+        // [정확한 목표 순간 이후의 골든존]
+        const diffAfter = currentSecInCycle - targetMoment;
+        const sPart = Math.floor(diffAfter);
+        const msPart = Math.floor((diffAfter % 1) * 1000);
+        remainSign.innerText = '+';
+        remainSec.innerText = sPart;
+        remainMs.innerText = `.${String(msPart).padStart(3, '0')}초`;
         remainingBox.classList.add('in-golden');
         remainingTimer.className = 'remaining-timer golden';
         remainingDesc.innerHTML = '👑 <b style="color:var(--kakao-yellow); font-size:0.88rem;">지금 누르세요! (골든존 220ms 여유!)</b>';
       } else {
-        const diffAfter = currentSecInCycle - goldenStart;
+        const diffAfter = currentSecInCycle - targetMoment;
         const sPart = Math.floor(diffAfter);
         const msPart = Math.floor((diffAfter % 1) * 1000);
 
@@ -1355,7 +1367,12 @@
       }
 
       // 시계 플래시 (골든존 진입 시 0.4초간 시원하게 반짝임)
-      if (currentSecInCycle >= goldenStart && currentSecInCycle <= flashEnd) {
+      if (currentSecInCycle >= goldenStart && currentSecInCycle < targetMoment) {
+        clockCard.classList.add('golden-flash');
+        clockDisplay.classList.add('golden-flash');
+        countdownText.className = 'countdown-text fire';
+        countdownText.innerHTML = `⏳ <b>골든존 진입! 정중앙까지 ${Math.max(0, targetMoment - currentSecInCycle).toFixed(2)}초</b>`;
+      } else if (currentSecInCycle >= targetMoment && currentSecInCycle <= goldenEnd) {
         clockCard.classList.add('golden-flash');
         clockDisplay.classList.add('golden-flash');
         countdownText.className = 'countdown-text fire';
@@ -1369,15 +1386,15 @@
           countdownText.innerHTML = `⚠️ <b>위험 구간! 튕김 주의 (아직 누르지 마세요!)</b>`;
         } else {
           countdownText.className = 'countdown-text';
-          let timeToGold = goldenStart - currentSecInCycle;
-          if (timeToGold < 0) timeToGold += currentInterval;
-          countdownText.innerHTML = `골든존까지 <b>${timeToGold.toFixed(2)}초</b> 남음`;
+          let timeToTargetNext = targetMoment - currentSecInCycle;
+          if (timeToTargetNext < 0) timeToTargetNext += currentInterval;
+          countdownText.innerHTML = `정중앙 0.000초까지 <b>${timeToTargetNext.toFixed(2)}초</b> 남음`;
         }
       }
 
       // ⏱️ 정밀 물리 진자 캔버스 렌더링
       const goldenCenter = currentInterval - 0.500;
-      drawPendulum(currentSecInCycle, goldenCenter, goldenStart, goldenEnd);
+      drawPendulum(Date.now() + targetTimeOffset, goldenCenter, goldenStart, goldenEnd);
 
       requestAnimationFrame(renderClock);
     }
@@ -1387,7 +1404,7 @@
     const pCtx = pCanvas ? pCanvas.getContext('2d') : null;
     const pendulumCard = document.getElementById('pendulum-card');
 
-    function drawPendulum(secInCycle, goldenCenter, goldenStart, goldenEnd) {
+    function drawPendulum(targetTimeMs, goldenCenter, goldenStart, goldenEnd) {
       if (!pCtx || !pCanvas) return;
 
       const w = pCanvas.width;
@@ -1398,20 +1415,22 @@
       const cy = 16;
       const L = h - 38; // 진자 길이
 
-      // 골든존 중심 대비 시간 오차 (초)
-      let diff = secInCycle - goldenCenter;
-      if (diff > (currentInterval / 2)) diff -= currentInterval;
-      if (diff < -(currentInterval / 2)) diff += currentInterval;
-
-      // 진자 각도: 0.000초 순간에 정중앙(theta = 0)을 최고 속도로 수직 관통!
+      // 한 훈련 주기 동안 목표 중앙에서 출발해 한쪽 끝까지 갔다가,
+      // 다음 목표 중앙에서 다시 돌아오도록 만든다. 중앙 통과는 목표 시각에만 발생한다.
       const thetaMax = 0.62; // 약 35.5도
-      const swingPeriod = 2.0; // 2초 주기 왕복 스윙
-      const theta = thetaMax * Math.sin((2 * Math.PI * diff) / swingPeriod);
+      const cycleMs = currentInterval * 1000;
+      const centerMs = goldenCenter * 1000;
+      const phaseMs = ((targetTimeMs - centerMs) % cycleMs + cycleMs) % cycleMs;
+      const cycleNumber = Math.floor((targetTimeMs - centerMs) / cycleMs);
+      const direction = Math.abs(cycleNumber % 2) === 0 ? 1 : -1;
+      const theta = direction * thetaMax * Math.sin(Math.PI * phaseMs / cycleMs);
 
       const bobX = cx + L * Math.sin(theta);
       const bobY = cy + L * Math.cos(theta);
 
-      const inGolden = (secInCycle >= goldenStart && secInCycle <= goldenEnd);
+      const secInCycle = ((targetTimeMs / 1000) % 60 + 60) % 60;
+      const cycleSec = secInCycle % currentInterval;
+      const inGolden = (cycleSec >= goldenStart && cycleSec <= goldenEnd);
 
       // 1. 배경 가이드 원호 점선 (Arc)
       pCtx.beginPath();
@@ -1423,7 +1442,7 @@
       pCtx.setLineDash([]);
 
       // 2. 골든존 타깃 부채꼴 영역
-      const goldenTheta = thetaMax * Math.sin((2 * Math.PI * 0.11) / swingPeriod);
+      const goldenTheta = thetaMax * Math.sin((Math.PI * 0.11) / currentInterval);
       pCtx.beginPath();
       pCtx.moveTo(cx, cy);
       pCtx.arc(cx, cy, L + 16, Math.PI/2 - goldenTheta, Math.PI/2 + goldenTheta);
@@ -1449,7 +1468,7 @@
 
       // 좌우 보조 눈금
       [-0.4, -0.2, 0.2, 0.4].forEach(offsetSec => {
-        const t = thetaMax * Math.sin((2 * Math.PI * offsetSec) / swingPeriod);
+        const t = thetaMax * Math.sin((Math.PI * offsetSec) / currentInterval);
         const mx = cx + (L + 6) * Math.sin(t);
         const my = cy + (L + 6) * Math.cos(t);
         pCtx.beginPath();
