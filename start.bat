@@ -3,7 +3,7 @@ chcp 65001 >nul
 cd /d "%~dp0"
 
 echo ========================================================
-echo  🚀 kakaobank.com 오픈런 타이밍 트레이너 (Windows)
+echo  🚀 Timing Workspace 서버시간 타이머 (Windows)
 echo ========================================================
 
 :: 1. 파이썬 설치 확인
@@ -28,7 +28,7 @@ if %ERRORLEVEL% equ 0 (
     tailscale serve --bg --https=8443 8080 >nul 2>&1
 )
 
-:: 4. 트레이너 서버 실행
+:: 4. 서버시간 타이머 실행
 echo [INFO] 서버를 가동합니다...
 call venv\Scripts\python server.py
 pause

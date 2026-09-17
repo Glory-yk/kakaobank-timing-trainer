@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>카카오뱅크 오픈런 타이밍 트레이너</title>
+  <title>Timing Workspace · 서버시간 타이머</title>
   <style>
     :root {
       --bg: #121214;
@@ -827,21 +827,84 @@
       gap: 5px;
       cursor: pointer;
     }
+
+    .target-config {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .target-config label {
+      display: block;
+      color: #d7d7dc;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-bottom: 7px;
+    }
+
+    .url-row {
+      display: flex;
+      gap: 7px;
+    }
+
+    .url-input {
+      min-width: 0;
+      flex: 1;
+      border: 1px solid #3c3c48;
+      border-radius: 8px;
+      background: #141419;
+      color: #f5f5f7;
+      padding: 9px 10px;
+      font-size: 0.82rem;
+    }
+
+    .url-input:focus {
+      outline: 2px solid rgba(254, 229, 0, 0.45);
+      border-color: var(--kakao-yellow);
+    }
+
+    .apply-btn {
+      border: 0;
+      border-radius: 8px;
+      background: var(--kakao-yellow);
+      color: #181818;
+      font-weight: 800;
+      padding: 0 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .target-help {
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      line-height: 1.4;
+      margin-top: 6px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
       <div class="badge-wrap">
-        <span class="brand-tag"><span class="k-icon">B</span> kakaobank.com</span>
+        <span class="brand-tag"><span class="k-icon">T</span> <span id="target-host">www.kakaobank.com</span></span>
         <div class="sync-status">
           <div class="dot" id="sync-dot"></div>
-          <span id="sync-text">카카오뱅크 동기화 중...</span>
-          <button class="resync-btn" onclick="forceResyncKakao(event)">🔄 동기화</button>
+          <span id="sync-text">서버시간 동기화 중...</span>
+          <button class="resync-btn" onclick="forceResyncTarget(event)">🔄 동기화</button>
         </div>
       </div>
-      <h1>카카오뱅크 오픈런 타이밍 트레이너</h1>
+      <h1>Timing Workspace · 서버시간 타이머</h1>
     </header>
+
+    <div class="target-config">
+      <label for="target-url">측정할 사이트 서버시간</label>
+      <div class="url-row">
+        <input class="url-input" id="target-url" type="url" value="https://www.kakaobank.com" placeholder="https://example.com">
+        <button class="apply-btn" type="button" onclick="applyTarget()">적용</button>
+      </div>
+      <div class="target-help">공개 웹사이트의 HTTP Date 헤더를 기준으로 시각을 추정합니다. 로그인·결제·신청 요청을 대신 보내지는 않습니다.</div>
+    </div>
 
     <!-- 실전 타깃 팁 배너 -->
     <div class="target-banner">
@@ -878,7 +941,7 @@
 
     <!-- 대형 디지털 시계 및 카운트다운 카드 -->
     <div class="clock-card" id="clock-card">
-      <div class="clock-title" id="clock-title">🟡 카카오뱅크 실시간 서버 시계</div>
+      <div class="clock-title" id="clock-title">🟡 www.kakaobank.com 실시간 서버 시계</div>
       <div class="digital-clock" id="clock-display">
         00:00:00<span class="ms">.000</span>
       </div>
@@ -1017,7 +1080,8 @@
 
   <script>
     let currentInterval = 10;
-    let kakaoTimeOffset = 0;
+    let targetTimeOffset = 0;
+    let targetUrl = 'https://www.kakaobank.com';
     let lastRtt = 0;
     let isSyncing = false;
     let records = [];
@@ -1085,7 +1149,27 @@
       }
     }
 
-    // 카카오뱅크 시계 동기화
+    function targetHost(url) {
+      try { return new URL(url).host; } catch (e) { return url; }
+    }
+
+    function applyTarget() {
+      const input = document.getElementById('target-url');
+      const value = input.value.trim();
+      if (!value) return;
+      targetUrl = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+      input.value = targetUrl;
+      document.getElementById('target-host').innerText = targetHost(targetUrl);
+      document.getElementById('clock-title').innerText = `🟡 ${targetHost(targetUrl)} 실시간 서버 시계`;
+      resetStats();
+      syncClock();
+    }
+
+    document.getElementById('target-url').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') applyTarget();
+    });
+
+    // 입력한 공개 사이트 서버시간 동기화
     async function syncClock() {
       if (isSyncing) return;
       isSyncing = true;
@@ -1095,30 +1179,31 @@
 
       try {
         const t0 = performance.now();
-        const res = await fetch(`/api/time-sync?client_send=${Date.now()}`);
+        const res = await fetch(`/api/time-sync?url=${encodeURIComponent(targetUrl)}&client_send=${Date.now()}`);
         const t1 = performance.now();
         const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || '서버시간을 읽을 수 없습니다.');
 
         lastRtt = Math.round(t1 - t0);
-        const estimatedKakaoNow = data.server_time + (lastRtt / 2);
-        kakaoTimeOffset = estimatedKakaoNow - Date.now();
+        const estimatedTargetNow = data.server_time + (lastRtt / 2);
+        targetTimeOffset = estimatedTargetNow - Date.now();
 
-        syncText.innerText = `카카오뱅크 동기화 (${data.kakaobank_offset_ms > 0 ? '+' : ''}${data.kakaobank_offset_ms}ms)`;
-        syncDetail.innerText = `카카오 RTT ${data.kakaobank_rtt_ms}ms`;
+        syncText.innerText = `${data.target_host} 동기화 (${data.server_offset_ms > 0 ? '+' : ''}${data.server_offset_ms}ms)`;
+        syncDetail.innerText = `RTT ${data.server_rtt_ms}ms · ${data.sync_status}`;
         syncDot.style.background = '#34c759';
       } catch (err) {
-        syncText.innerText = `동기화 지연 중`;
+        syncText.innerText = err.message || '동기화 지연 중';
         syncDot.style.background = '#ff4d4f';
       } finally {
         isSyncing = false;
       }
     }
 
-    async function forceResyncKakao(e) {
+    async function forceResyncTarget(e) {
       if (e) e.stopPropagation();
-      document.getElementById('sync-text').innerText = '카카오뱅크 재동기화 중...';
+      document.getElementById('sync-text').innerText = `${targetHost(targetUrl)} 재동기화 중...`;
       try {
-        await fetch('/api/kakaobank/resync', { method: 'POST' });
+        await fetch(`/api/resync?url=${encodeURIComponent(targetUrl)}`, { method: 'POST' });
         await syncClock();
       } catch(e) {}
     }
@@ -1177,15 +1262,15 @@
     let lastBeepSec = -1;
 
     function renderClock() {
-      const kakaoDate = new Date(Date.now() + kakaoTimeOffset);
-      const h = String(kakaoDate.getHours()).padStart(2, '0');
-      const m = String(kakaoDate.getMinutes()).padStart(2, '0');
-      const s = String(kakaoDate.getSeconds()).padStart(2, '0');
-      const ms = String(kakaoDate.getMilliseconds()).padStart(3, '0');
+      const targetDate = new Date(Date.now() + targetTimeOffset);
+      const h = String(targetDate.getHours()).padStart(2, '0');
+      const m = String(targetDate.getMinutes()).padStart(2, '0');
+      const s = String(targetDate.getSeconds()).padStart(2, '0');
+      const ms = String(targetDate.getMilliseconds()).padStart(3, '0');
 
       clockDisplay.innerHTML = `${h}:${m}:${s}<span class="ms">.${ms}</span>`;
 
-      const currentSecInCycle = (kakaoDate.getSeconds() % currentInterval) + (kakaoDate.getMilliseconds() / 1000);
+      const currentSecInCycle = (targetDate.getSeconds() % currentInterval) + (targetDate.getMilliseconds() / 1000);
       const progressPercent = (currentSecInCycle / currentInterval) * 100;
       countdownBar.style.width = `${progressPercent}%`;
 
@@ -1465,10 +1550,10 @@
       btn.classList.add('touching');
       setTimeout(() => btn.classList.remove('touching'), 120);
 
-      const touchKakaoMs = Date.now() + kakaoTimeOffset;
+      const touchTargetMs = Date.now() + targetTimeOffset;
 
       try {
-        const response = await fetch(`/api/click?interval=${currentInterval}&client_touch_ms=${touchKakaoMs}`, {
+        const response = await fetch(`/api/click?url=${encodeURIComponent(targetUrl)}&interval=${currentInterval}&client_touch_ms=${touchTargetMs}`, {
           method: 'POST',
         });
         const data = await response.json();
@@ -1555,7 +1640,7 @@
       if (!last) return;
 
       if (last.grade === 'PERFECT') {
-        coachingText.innerHTML = `<strong>👑 완벽한 골든존 적중!</strong> 화면 시계 <strong>${last.sec_in_cycle}</strong>에 눌렀습니다. 실전 카카오뱅크 서버에 약 <strong>+${Math.max(0, Math.round(last.simulated_arrive_diff_ms))}ms</strong>로 여유 있게 1등 안착합니다! 신호등 리듬을 기억하세요.`;
+        coachingText.innerHTML = `<strong>👑 완벽한 골든존 적중!</strong> 화면 시계 <strong>${last.sec_in_cycle}</strong>에 눌렀습니다. 목표 서버에 약 <strong>+${Math.max(0, Math.round(last.simulated_arrive_diff_ms))}ms</strong>로 도착하는 좋은 타이밍입니다! 신호등 리듬을 기억하세요.`;
       } else if (last.grade === 'DANGER') {
         coachingText.innerHTML = `<strong>⚠️ 튕김 위험:</strong> ${last.sec_in_cycle}에 눌러 정각 이전 컷오프 위험이 있습니다. <strong>신호등이 주황(1)에서 불꽃(🔥)으로 바뀌는 찰나까지</strong> 조금만 더 기다리세요!`;
       } else if (last.grade === 'EARLY') {

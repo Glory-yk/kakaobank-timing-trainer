@@ -13,5 +13,5 @@ if command -v tailscale >/dev/null 2>&1; then
     tailscale serve --bg --https=8443 8080 >/dev/null 2>&1 || true
 fi
 
-echo "🚀 오픈런 타이밍 트레이너 서버 실행 중..."
+echo "🚀 Timing Workspace 서버시간 타이머 실행 중..."
 ./venv/bin/python3 server.py
