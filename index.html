@@ -257,8 +257,8 @@
       color: #888;
     }
 
-    /* ⏱️ 정밀 타이밍 물리 진자(Pendulum) 카드 */
-    .pendulum-card {
+    /* 🎯 마지막 3초 타이밍 락온 카드 */
+    .timing-lock-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 18px;
@@ -272,13 +272,13 @@
       transition: all 0.1s ease;
     }
 
-    .pendulum-card.in-golden {
+    .timing-lock-card.in-golden {
       border-color: var(--kakao-yellow);
       background: #24231b;
       box-shadow: 0 0 35px rgba(254, 229, 0, 0.5), inset 0 0 15px rgba(254, 229, 0, 0.15);
     }
 
-    .pendulum-header {
+    .timing-lock-header {
       width: 100%;
       display: flex;
       justify-content: space-between;
@@ -288,11 +288,11 @@
       margin-bottom: 6px;
     }
 
-    .pendulum-header b {
+    .timing-lock-header b {
       color: var(--kakao-yellow);
     }
 
-    .pendulum-canvas-wrap {
+    .timing-lock-canvas-wrap {
       width: 100%;
       height: 140px;
       position: relative;
@@ -302,13 +302,13 @@
       overflow: hidden;
     }
 
-    #pendulum-canvas {
+    #timing-lock-canvas {
       width: 100%;
       height: 100%;
       display: block;
     }
 
-    .pendulum-guide {
+    .timing-lock-guide {
       margin-top: 6px;
       font-size: 0.74rem;
       color: #b0b0b8;
@@ -317,7 +317,7 @@
       gap: 5px;
     }
 
-    .pendulum-guide b {
+    .timing-lock-guide b {
       color: var(--kakao-yellow);
     }
 
@@ -970,17 +970,17 @@
       </div>
     </div>
 
-    <!-- ⏱️ 정밀 타이밍 물리 진자(Pendulum) 훈련 카드 -->
-    <div class="pendulum-card" id="pendulum-card">
-      <div class="pendulum-header">
-        <span>⏱️ 정밀 타이밍 물리 진자 (Pendulum)</span>
-        <span>타깃: <b>정중앙 0.000s 관통</b></span>
+    <!-- 🎯 마지막 3초 타이밍 락온 카드 -->
+    <div class="timing-lock-card" id="timing-lock-card">
+      <div class="timing-lock-header">
+        <span>🎯 마지막 3초 타이밍 락온</span>
+        <span>목표: <b>정중앙 0.000s</b></span>
       </div>
-      <div class="pendulum-canvas-wrap">
-        <canvas id="pendulum-canvas" width="480" height="140"></canvas>
+      <div class="timing-lock-canvas-wrap">
+        <canvas id="timing-lock-canvas" width="480" height="140"></canvas>
       </div>
-      <div class="pendulum-guide">
-        💡 <b>시각 훈련법:</b> 진자가 좌우로 흔들리다 <strong>정중앙 황금선에 닿는 순간</strong> 스마트폰을 누르세요!
+      <div class="timing-lock-guide">
+        💡 <b>시각 훈련법:</b> 마지막 3초에 포인터가 움직입니다. <strong>황금 목표선에 닿는 순간</strong> 스마트폰을 누르세요!
       </div>
     </div>
 
@@ -1403,163 +1403,128 @@
         }
       }
 
-      // ⏱️ 정밀 물리 진자 캔버스 렌더링
-      const goldenCenter = currentInterval - 0.500;
-      drawPendulum(targetTimeMs, goldenCenter, goldenStart, goldenEnd);
+      // 🎯 마지막 3초 타이밍 락온 렌더링
+      drawTimingLock(targetTimeMs, currentSecInCycle, targetMoment, goldenStart, goldenEnd);
 
       requestAnimationFrame(renderClock);
     }
 
-    // 정밀 물리 진자(Pendulum) 캔버스 드로잉 엔진
-    const pCanvas = document.getElementById('pendulum-canvas');
-    const pCtx = pCanvas ? pCanvas.getContext('2d') : null;
-    const pendulumCard = document.getElementById('pendulum-card');
+    // 마지막 3초만 빠르게 움직이는 타이밍 락온 게이지
+    const lockCanvas = document.getElementById('timing-lock-canvas');
+    const lockCtx = lockCanvas ? lockCanvas.getContext('2d') : null;
+    const lockCard = document.getElementById('timing-lock-card');
 
-    function drawPendulum(targetTimeMs, goldenCenter, goldenStart, goldenEnd) {
-      if (!pCtx || !pCanvas) return;
+    function roundRect(ctx, x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.roundRect(x, y, width, height, radius);
+    }
 
-      const w = pCanvas.width;
-      const h = pCanvas.height;
-      pCtx.clearRect(0, 0, w, h);
+    function drawTimingLock(targetTimeMs, cycleSec, targetMoment, goldenStart, goldenEnd) {
+      if (!lockCtx || !lockCanvas) return;
 
-      const cx = w / 2;
-      const cy = 16;
-      const L = h - 38; // 진자 길이
+      const w = lockCanvas.width;
+      const h = lockCanvas.height;
+      lockCtx.clearRect(0, 0, w, h);
 
-      // 한 훈련 주기 동안 목표 중앙에서 출발해 한쪽 끝까지 갔다가,
-      // 다음 목표 중앙에서 다시 돌아오도록 만든다. 중앙 통과는 목표 시각에만 발생한다.
-      const thetaMax = 0.62; // 약 35.5도
-      const cycleMs = currentInterval * 1000;
-      const centerMs = goldenCenter * 1000;
-      const phaseMs = ((targetTimeMs - centerMs) % cycleMs + cycleMs) % cycleMs;
-      const cycleNumber = Math.floor((targetTimeMs - centerMs) / cycleMs);
-      const direction = Math.abs(cycleNumber % 2) === 0 ? 1 : -1;
-      const theta = direction * thetaMax * Math.sin(Math.PI * phaseMs / cycleMs);
+      const left = 24;
+      const right = w - 24;
+      const trackY = 70;
+      const trackH = 18;
+      const cueStart = targetMoment - 3.0;
+      const cueEnd = goldenEnd;
+      const cueDuration = cueEnd - cueStart;
+      const goldenStartX = left + ((goldenStart - cueStart) / cueDuration) * (right - left);
+      const targetX = left + ((targetMoment - cueStart) / cueDuration) * (right - left);
+      const goldenEndX = left + ((goldenEnd - cueStart) / cueDuration) * (right - left);
 
-      const bobX = cx + L * Math.sin(theta);
-      const bobY = cy + L * Math.cos(theta);
+      let progress = 0;
+      let cueState = '대기 중';
+      const cueActive = cycleSec >= cueStart && cycleSec <= cueEnd;
+      if (cueActive) {
+        progress = Math.max(0, Math.min(1, (cycleSec - cueStart) / cueDuration));
+        cueState = cycleSec < targetMoment ? '목표선으로 접근 중' : '골든존 유지 중';
+      } else if (cycleSec > cueEnd) {
+        progress = 1;
+        cueState = '다음 목표 대기';
+      }
 
-      const secInCycle = ((targetTimeMs / 1000) % 60 + 60) % 60;
-      const cycleSec = secInCycle % currentInterval;
-      const inGolden = (cycleSec >= goldenStart && cycleSec <= goldenEnd);
+      // 기본 트랙
+      roundRect(lockCtx, left, trackY, right - left, trackH, 9);
+      lockCtx.fillStyle = '#252530';
+      lockCtx.fill();
 
-      // 1. 배경 가이드 원호 점선 (Arc)
-      pCtx.beginPath();
-      pCtx.arc(cx, cy, L, Math.PI/2 - thetaMax - 0.06, Math.PI/2 + thetaMax + 0.06);
-      pCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-      pCtx.lineWidth = 1.5;
-      pCtx.setLineDash([4, 4]);
-      pCtx.stroke();
-      pCtx.setLineDash([]);
+      // 위험·골든·지각 구간
+      roundRect(lockCtx, left, trackY, goldenStartX - left, trackH, 9);
+      lockCtx.fillStyle = 'rgba(255, 71, 87, 0.34)';
+      lockCtx.fill();
+      lockCtx.fillStyle = 'rgba(254, 229, 0, 0.62)';
+      lockCtx.fillRect(goldenStartX, trackY, goldenEndX - goldenStartX, trackH);
+      roundRect(lockCtx, goldenEndX, trackY, right - goldenEndX, trackH, 9);
+      lockCtx.fillStyle = 'rgba(255, 165, 2, 0.32)';
+      lockCtx.fill();
 
-      // 2. 골든존 타깃 부채꼴 영역
-      const goldenTheta = thetaMax * Math.sin((Math.PI * 0.11) / currentInterval);
-      pCtx.beginPath();
-      pCtx.moveTo(cx, cy);
-      pCtx.arc(cx, cy, L + 16, Math.PI/2 - goldenTheta, Math.PI/2 + goldenTheta);
-      pCtx.fillStyle = inGolden ? 'rgba(254, 229, 0, 0.24)' : 'rgba(254, 229, 0, 0.08)';
-      pCtx.fill();
-
-      // 3. 중앙 0.000s 골든 게이트 수직선 (Target Gate)
-      pCtx.beginPath();
-      pCtx.moveTo(cx, cy + 10);
-      pCtx.lineTo(cx, h - 4);
-      pCtx.strokeStyle = inGolden ? '#fee500' : 'rgba(254, 229, 0, 0.65)';
-      pCtx.lineWidth = inGolden ? 3.5 : 2;
-      pCtx.shadowColor = inGolden ? '#fee500' : 'transparent';
-      pCtx.shadowBlur = inGolden ? 18 : 0;
-      pCtx.stroke();
-      pCtx.shadowBlur = 0;
-
-      // 중앙 타깃 텍스트
-      pCtx.font = inGolden ? 'bold 11px sans-serif' : '10px sans-serif';
-      pCtx.fillStyle = inGolden ? '#fee500' : '#8e8e93';
-      pCtx.textAlign = 'center';
-      pCtx.fillText('🎯 0.000s 골든 게이트', cx, h - 6);
-
-      // 좌우 보조 눈금
-      [-0.4, -0.2, 0.2, 0.4].forEach(offsetSec => {
-        const t = thetaMax * Math.sin((Math.PI * offsetSec) / currentInterval);
-        const mx = cx + (L + 6) * Math.sin(t);
-        const my = cy + (L + 6) * Math.cos(t);
-        pCtx.beginPath();
-        pCtx.arc(mx, my, 2, 0, Math.PI * 2);
-        pCtx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-        pCtx.fill();
+      // 목표선과 골든존 경계
+      lockCtx.strokeStyle = 'rgba(255, 255, 255, 0.42)';
+      lockCtx.lineWidth = 1;
+      [goldenStartX, goldenEndX].forEach(x => {
+        lockCtx.beginPath();
+        lockCtx.moveTo(x, trackY - 7);
+        lockCtx.lineTo(x, trackY + trackH + 7);
+        lockCtx.stroke();
       });
+      lockCtx.strokeStyle = '#fee500';
+      lockCtx.lineWidth = cueActive ? 3 : 2;
+      lockCtx.shadowColor = cueActive ? '#fee500' : 'transparent';
+      lockCtx.shadowBlur = cueActive ? 12 : 0;
+      lockCtx.beginPath();
+      lockCtx.moveTo(targetX, trackY - 18);
+      lockCtx.lineTo(targetX, trackY + trackH + 18);
+      lockCtx.stroke();
+      lockCtx.shadowBlur = 0;
 
-      // 4. 진자 막대 (Chrome Rod)
-      pCtx.beginPath();
-      pCtx.moveTo(cx, cy);
-      pCtx.lineTo(bobX, bobY);
-      pCtx.strokeStyle = inGolden ? '#ffffff' : '#a0a0b8';
-      pCtx.lineWidth = inGolden ? 3.5 : 2.5;
-      pCtx.stroke();
+      // 마지막 3초 접근 포인터
+      const pointerX = left + progress * (right - left);
+      const pulse = cueActive ? 1 + Math.sin(targetTimeMs / 90) * 0.08 : 1;
+      lockCtx.beginPath();
+      lockCtx.arc(pointerX, trackY + trackH / 2, 13 * pulse, 0, Math.PI * 2);
+      lockCtx.fillStyle = cueActive ? '#fff9c4' : '#8c8c99';
+      lockCtx.shadowColor = cueActive ? '#fee500' : 'rgba(255,255,255,0.16)';
+      lockCtx.shadowBlur = cueActive ? 18 : 6;
+      lockCtx.fill();
+      lockCtx.shadowBlur = 0;
+      lockCtx.beginPath();
+      lockCtx.arc(pointerX, trackY + trackH / 2, 5, 0, Math.PI * 2);
+      lockCtx.fillStyle = cueActive ? '#ffb300' : '#4e4e5a';
+      lockCtx.fill();
 
-      // 5. 상단 피벗 힌지
-      pCtx.beginPath();
-      pCtx.arc(cx, cy, 5, 0, Math.PI * 2);
-      pCtx.fillStyle = inGolden ? '#fee500' : '#d0d0d8';
-      pCtx.fill();
-      pCtx.strokeStyle = '#fff';
-      pCtx.lineWidth = 1.5;
-      pCtx.stroke();
+      // 설명 레이블
+      lockCtx.textAlign = 'center';
+      lockCtx.font = '10px sans-serif';
+      lockCtx.fillStyle = '#8e8e93';
+      lockCtx.fillText('-3초', left, 38);
+      lockCtx.fillStyle = '#fee500';
+      lockCtx.font = cueActive ? 'bold 11px sans-serif' : '10px sans-serif';
+      lockCtx.fillText('🎯 0.000초 목표', targetX, 26);
+      lockCtx.fillStyle = '#8e8e93';
+      lockCtx.font = '10px sans-serif';
+      lockCtx.fillText('+0.120초', right, 38);
+      lockCtx.fillStyle = cueActive ? '#fee500' : '#8e8e93';
+      lockCtx.font = cueActive ? 'bold 11px sans-serif' : '10px sans-serif';
+      lockCtx.fillText(cueState, w / 2, 120);
 
-      // 6. 하단 진자 추 (Bob) 레이저 조준선
-      pCtx.beginPath();
-      pCtx.moveTo(bobX, bobY);
-      pCtx.lineTo(bobX, bobY + 12);
-      pCtx.strokeStyle = inGolden ? '#ffffff' : '#fee500';
-      pCtx.lineWidth = 2;
-      pCtx.stroke();
-
-      // 진자 추 (황금빛 구체)
-      pCtx.beginPath();
-      pCtx.arc(bobX, bobY, 13, 0, Math.PI * 2);
-      const grad = pCtx.createRadialGradient(bobX - 3, bobY - 3, 2, bobX, bobY, 13);
-      if (inGolden) {
-        grad.addColorStop(0, '#ffffff');
-        grad.addColorStop(0.5, '#fee500');
-        grad.addColorStop(1, '#e5a500');
-        pCtx.shadowColor = '#fee500';
-        pCtx.shadowBlur = 22;
-      } else {
-        grad.addColorStop(0, '#fff48d');
-        grad.addColorStop(0.7, '#fee500');
-        grad.addColorStop(1, '#c9a500');
-        pCtx.shadowColor = 'rgba(254, 229, 0, 0.4)';
-        pCtx.shadowBlur = 8;
-      }
-      pCtx.fillStyle = grad;
-      pCtx.fill();
-      pCtx.shadowBlur = 0;
-      pCtx.strokeStyle = inGolden ? '#ffffff' : '#222';
-      pCtx.lineWidth = inGolden ? 2 : 1.5;
-      pCtx.stroke();
-
-      // 7. 골든존 통과 순간 충격파 링 (Shockwave Ring)
-      if (inGolden) {
-        if (pendulumCard) pendulumCard.classList.add('in-golden');
-        pCtx.beginPath();
-        pCtx.arc(bobX, bobY, 20, 0, Math.PI * 2);
-        pCtx.strokeStyle = 'rgba(254, 229, 0, 0.75)';
-        pCtx.lineWidth = 2;
-        pCtx.stroke();
-      } else {
-        if (pendulumCard) pendulumCard.classList.remove('in-golden');
-      }
+      if (lockCard) lockCard.classList.toggle('in-golden', cycleSec >= goldenStart && cycleSec <= goldenEnd);
     }
 
-    function resizePendulumCanvas() {
-      if (!pCanvas) return;
-      const wrap = pCanvas.parentElement;
+    function resizeTimingLockCanvas() {
+      if (!lockCanvas) return;
+      const wrap = lockCanvas.parentElement;
       if (wrap && wrap.clientWidth > 0) {
-        pCanvas.width = wrap.clientWidth;
-        pCanvas.height = 140;
+        lockCanvas.width = wrap.clientWidth;
+        lockCanvas.height = 140;
       }
     }
-    window.addEventListener('resize', resizePendulumCanvas);
-    setTimeout(resizePendulumCanvas, 50);
+    window.addEventListener('resize', resizeTimingLockCanvas);
+    setTimeout(resizeTimingLockCanvas, 50);
 
     requestAnimationFrame(renderClock);
 
