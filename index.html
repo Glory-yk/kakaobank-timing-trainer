@@ -1081,6 +1081,7 @@
   <script>
     let currentInterval = 10;
     let targetTimeOffset = 0;
+    let hasTargetTimeOffset = false;
     let targetUrl = 'https://www.kakaobank.com';
     let lastRtt = 0;
     let isSyncing = false;
@@ -1158,6 +1159,7 @@
       const value = input.value.trim();
       if (!value) return;
       targetUrl = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+      hasTargetTimeOffset = false;
       input.value = targetUrl;
       document.getElementById('target-host').innerText = targetHost(targetUrl);
       document.getElementById('clock-title').innerText = `🟡 ${targetHost(targetUrl)} 실시간 서버 시계`;
@@ -1190,7 +1192,15 @@
 
         lastRtt = Math.round(t1 - t0);
         const estimatedTargetNow = data.server_time + (lastRtt / 2);
-        targetTimeOffset = estimatedTargetNow - Date.now();
+        const nextOffset = estimatedTargetNow - Date.now();
+        if (!hasTargetTimeOffset) {
+          targetTimeOffset = nextOffset;
+          hasTargetTimeOffset = true;
+        } else {
+          // 재동기화 때 네트워크 편차가 화면 시계를 순간이동시키지 않도록 보정량을 나눠 적용한다.
+          const correction = (nextOffset - targetTimeOffset) * 0.5;
+          targetTimeOffset += Math.max(-25, Math.min(25, correction));
+        }
 
         syncText.innerText = `${data.target_host} 동기화 (${data.server_offset_ms > 0 ? '+' : ''}${data.server_offset_ms}ms)`;
         syncDetail.innerText = `RTT ${data.server_rtt_ms}ms · ${data.sync_status}`;
@@ -1267,7 +1277,8 @@
     let lastBeepSec = -1;
 
     function renderClock() {
-      const targetDate = new Date(Date.now() + targetTimeOffset);
+      const targetTimeMs = Date.now() + targetTimeOffset;
+      const targetDate = new Date(targetTimeMs);
       const h = String(targetDate.getHours()).padStart(2, '0');
       const m = String(targetDate.getMinutes()).padStart(2, '0');
       const s = String(targetDate.getSeconds()).padStart(2, '0');
@@ -1394,7 +1405,7 @@
 
       // ⏱️ 정밀 물리 진자 캔버스 렌더링
       const goldenCenter = currentInterval - 0.500;
-      drawPendulum(Date.now() + targetTimeOffset, goldenCenter, goldenStart, goldenEnd);
+      drawPendulum(targetTimeMs, goldenCenter, goldenStart, goldenEnd);
 
       requestAnimationFrame(renderClock);
     }
